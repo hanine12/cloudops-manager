@@ -1,20 +1,25 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
-
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+import { PrismaModule } from './prisma/prisma.module.js';
+import { UsersModule } from './users/users.module.js';
+import { ProjectsModule } from './projects/projects.module.js';
+import { ServersModule } from './servers/servers.module.js';
+import { ApplicationsModule } from './applications/applications.module.js';
+import { MonitoringModule } from './monitoring/monitoring.module.js';
+import { AlertsModule } from './alerts/alerts.module.js';
+import { ObserveModule } from './observe.js';
 
 @Module({
   imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com,
-    // then run `npx @nestjs/observe link` to write your key pair into .env.
-    ObserveModule.forRoot({
-      appKey: process.env.OBSERVE_APP_KEY ?? 'YOUR_APP_KEY',
-      appSecret: process.env.OBSERVE_APP_SECRET ?? 'YOUR_APP_SECRET',
-      serviceId: 'backend',
-    }),
+    ObserveModule.forRoot({ serviceId: 'backend' }),
+    PrismaModule,
+    UsersModule,
+    ProjectsModule,
+    ServersModule,
+    ApplicationsModule,
+    MonitoringModule,
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
