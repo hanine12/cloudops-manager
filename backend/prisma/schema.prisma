@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums (lists of allowed values) ----------
+enum Role {
+  ADMIN
+  DEVOPS
+  VIEWER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ServerStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+}
+
+enum AppStatus {
+  RUNNING
+  STOPPED
+  FAILED
+}
+
+enum EnvName {
+  DEV
+  STAGING
+  PROD
+}
+
+enum MetricType {
+  CPU
+  RAM
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  RESOLVED
+}
+
+// ---------- Tables ----------
+model User {
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
+  passwordHash String
+  name         String
+  role         Role         @default(VIEWER)
+  createdAt    DateTime     @default(now())
+  teamMembers  TeamMember[]
+}
+
+model Team {
+  id          Int                 @id @default(autoincrement())
+  name        String              @unique
+  members     TeamMember[]
+  assignments ProjectAssignment[]
+}
+
+model TeamMember {
+  id         Int    @id @default(autoincrement())
+  userId     Int
+  teamId     Int
+  roleInTeam String @default("member")
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team       Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+model Project {
+  id           Int                 @id @default(autoincrement())
+  name         String
+  description  String?
+  status       ProjectStatus       @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  environments Environment[]
+  servers      Server[]
+  assignments  ProjectAssignment[]
+}
+
+model ProjectAssignment {
+  id        Int     @id @default(autoincrement())
+  projectId Int
+  teamId    Int
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, teamId])
+}
+
+model Environment {
+  id           Int           @id @default(autoincrement())
+  name         EnvName
+  projectId    Int
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@unique([projectId, name])
+}
+
+model Server {
+  id           Int           @id @default(autoincrement())
+  name         String
+  provider     String
+  region       String
+  cpu          Int
+  ram          Int
+  storage      Int
+  ip           String
+  status       ServerStatus  @default(ONLINE)
+  createdAt    DateTime      @default(now())
+  projectId    Int
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applications Application[]
+  metrics      Metric[]
+  alertRules   AlertRule[]
+  alerts       Alert[]
+}
+
+model Application {
+  id            Int         @id @default(autoincrement())
+  name          String
+  version       String
+  status        AppStatus   @default(RUNNING)
+  createdAt     DateTime    @default(now())
+  serverId      Int
+  environmentId Int
+  server        Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+}
+
+model Metric {
+  id        Int      @id @default(autoincrement())
+  serverId  Int
+  cpuUsage  Float
+  ramUsage  Float
+  timestamp DateTime @default(now())
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, timestamp])
+}
+
+model AlertRule {
+  id        Int        @id @default(autoincrement())
+  serverId  Int
+  metric    MetricType
+  threshold Float
+  severity  Severity
+  server    Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  alerts    Alert[]
+}
+
+model Alert {
+  id         Int         @id @default(autoincrement())
+  ruleId     Int
+  serverId   Int
+  severity   Severity
+  message    String
+  status     AlertStatus @default(OPEN)
+  createdAt  DateTime    @default(now())
+  resolvedAt DateTime?
+  rule       AlertRule   @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  server     Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+}
