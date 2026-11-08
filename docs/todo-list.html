@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CloudOps Manager – My To-Do List (CI/CD)</title>
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--fg:#1d2433;--muted:#64708a;--line:#dde3ec;--accent:#2f6db5;--ok:#2a9d6a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161d;--card:#1b212b;--fg:#e8ecf3;--muted:#9aa5ba;--line:#2c3441;--accent:#6aa5ee;--ok:#4cc38f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161d;--card:#1b212b;--fg:#e8ecf3;--muted:#9aa5ba;--line:#2c3441;--accent:#6aa5ee;--ok:#4cc38f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.total{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted);margin:6px 0 20px}
+.flow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:.9rem}
+.flow b{display:block;margin-bottom:4px}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+summary{cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:10px;list-style:none;font-weight:600;flex-wrap:wrap}
+summary::-webkit-details-marker{display:none}
+summary .tag{background:var(--accent);color:#fff;border-radius:8px;padding:2px 9px;font-size:.8rem;white-space:nowrap}
+summary .rel{border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:1px 8px;font-size:.75rem;white-space:nowrap}
+summary .name{flex:1;min-width:140px}
+summary .cnt{color:var(--muted);font-weight:400;font-size:.85rem}
+summary.done .tag{background:var(--ok)}
+.warn{margin:0 16px 8px;padding:8px 12px;border-left:3px solid #e0a030;background:rgba(224,160,48,.12);border-radius:6px;font-size:.88rem}
+ul{list-style:none;margin:0;padding:4px 16px 12px}
+li label{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+li:first-child label{border-top:0}
+input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--ok);flex:none}
+li.on span{text-decoration:line-through;color:var(--muted)}
+button{font:inherit;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 12px;cursor:pointer;margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+<h1>CloudOps Manager – My To-Do List</h1>
+<p class="sub">Minimal version first, CI/CD from week 3, then one upgrade per week. Progress is saved in this browser.</p>
+<div class="flow"><b>Release flow for every upgrade</b>feature branch → pull request → CI passes (lint, tests, build) → merge into develop → merge into main → CD deploys to the VM → tag the version.</div>
+<div class="bar"><i id="bar"></i></div>
+<div class="total"><span id="pct">0%</span><span id="count"></span></div>
+<div id="weeks"></div>
+<button id="reset">Reset all progress</button>
+</main>
+<script>
+/* A task starting with * is ticked on first load. */
+var W=[
+{t:"Week 0",n:"Setup and basics",done:1,tasks:["Install Node.js (LTS)","Install Git and set name/email","Create a GitHub account","Install VS Code + 5 extensions","Docker Desktop works (hello-world)","NestJS “Hello World” test works","Learn TypeScript basics","Learn NestJS basics","Learn Prisma basics","Learn Next.js basics","Understand Docker basics"]},
+{t:"Week 1",n:"Analysis, UML, Git",done:1,tasks:["GitHub repo created","Folders backend / frontend / docs","Branches main and develop","docs/01-user-needs.md","docs/02-architecture.md","docs/03-data-model.md","docs/04-use-cases.md","README updated","First pull request merged into develop"]},
+{t:"Week 2",n:"Data model and modules",done:1,tasks:["Create branch feature/backend-setup","Create the NestJS project in backend/","Install Prisma and run prisma init","Start PostgreSQL with Docker","Write schema.prisma (11 models + relations)","Run the first migration","Generate the 6 NestJS modules","Create PrismaService","Write the seed script (admin + fake data)","Run the seed and check data","Commit, push, merge into develop"]},
+{t:"Week 3",n:"Security, core API and CI",rel:"v0.1 in progress",warn:"Goal: a small but secure API (Users, Projects, Servers) with CI running on every push. Teams, Applications, Monitoring, Alerts and Dashboard endpoints move to weeks 5 and 6.",tasks:[
+"*Auth: register and login (bcrypt + JWT)",
+"JwtAuthGuard protecting all routes",
+"RolesGuard + @Roles decorator",
+"*DTOs + global ValidationPipe",
+"*Global exception filter",
+"*Swagger set up in main.ts",
+"Users endpoints (Admin only)",
+"Projects endpoints (CRUD)",
+"Servers endpoints (CRUD)",
+"Pagination, search and filters on projects and servers",
+"Test each role (Admin / DevOps / Viewer)",
+"Unit tests: auth service and guards (Jest)",
+"GitHub Actions CI: install, lint, test, build on every push and PR",
+"Protect main and develop: PR must pass CI before merge"]},
+{t:"Week 4",n:"Next.js UI, Docker and first deploy",rel:"v0.1.0 MVP",warn:"Intermediate evaluation this week (30% of your grade). Demo the version that is already deployed, not localhost.",tasks:[
+"Create the Next.js project",
+"Install TanStack Query, axios, Recharts, shadcn",
+"API client that sends the JWT",
+"Login and register pages",
+"Route protection with middleware.ts",
+"Layout with sidebar and navbar",
+"Show/hide buttons by role",
+"Projects list page and servers list page",
+"Loading and error states",
+"Responsive design",
+"backend/Dockerfile and frontend/Dockerfile (multi-stage)",
+"docker-compose.yml with PostgreSQL and a named volume",
+"Create .env.example files",
+"Prepare the VM/VPS (Docker, firewall, SSH key)",
+"Add GitHub Secrets (SSH host, key, DB password, JWT secret)",
+"CD workflow: on merge to main, build images and run docker compose up -d on the VM",
+"App reachable by IP or domain",
+"Tag v0.1.0 and write the release notes",
+"Prepare the intermediate demo"]},
+{t:"Week 5",n:"Projects, servers, applications",rel:"v0.2.0",tasks:[
+"Create branch feature/v0.2 and keep PRs small",
+"Applications endpoints (CRUD, linked to servers)",
+"Teams endpoints and project assignments",
+"Environments",
+"Projects: create/edit form, delete dialog, detail page",
+"Servers: create/edit form, delete dialog, detail page",
+"Applications: list, form, delete dialog",
+"Teams and project assignments UI",
+"prisma migrate deploy runs automatically in the deploy step",
+"Unit tests for the new services",
+"Merge, check CI and CD, tag v0.2.0"]},
+{t:"Week 6",n:"Monitoring, alerts, dashboard",rel:"v0.3.0",tasks:[
+"Monitoring endpoints (metrics, uptime)",
+"Alerts endpoints (rules, list, resolve)",
+"Dashboard summary endpoint",
+"Cron job generating CPU/RAM metrics",
+"Alert check after each metric",
+"Availability calculation",
+"Server page with CPU/RAM line chart",
+"Chart refetches every 10 seconds",
+"Alert rules page (thresholds)",
+"Incident history page with resolve button",
+"Dashboard counters",
+"Dashboard charts and filters",
+"Unit tests: alert logic",
+"Merge, check CI and CD, tag v0.3.0"]},
+{t:"Week 7",n:"Hardening and tests",rel:"v0.9.0",warn:"Docker and CD already exist since week 4, so this week is about quality.",tasks:[
+"Integration tests with supertest, added to the CI pipeline",
+"Coverage report in CI",
+"Health check endpoint and container restart policy",
+"Secrets only in GitHub Secrets, none in the repo",
+"20+ endpoints visible in Swagger",
+"At least 8 linked entities confirmed",
+"Rollback test: deploy a previous tag on the VM",
+"Fix bugs found by tests",
+"Tag v0.9.0"]},
+{t:"Week 8",n:"Finish and defense",rel:"v1.0.0",tasks:[
+"Fix remaining bugs",
+"README with install steps",
+"Final architecture and data model diagrams",
+"Swagger is complete",
+"Technical report (10 to 15 pages)",
+"Presentation slides",
+"Prepare seed data for the demo",
+"Rehearse the 10-minute demo",
+"Practice a small live code change",
+"Tag v1.0.0 and confirm the deployed app matches it",
+"Optional bonus: WebSocket real-time monitoring or AWS/Azure deploy"]}
+];
+var KEY="cloudops-checklist-v2",S={};
+try{S=JSON.parse(localStorage.getItem(KEY)||"null")||{}}catch(e){S={}}
+var first=!Object.keys(S).length;
+W.forEach(function(w,i){w.tasks=w.tasks.map(function(t,j){
+ if(t.charAt(0)==="*"){t=t.slice(1);if(first)S[i+"-"+j]=1}
+ else if(first&&w.done)S[i+"-"+j]=1;
+ return t})});
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function render(){
+ var root=document.getElementById("weeks");root.innerHTML="";var tot=0,dn=0,openSet=false;
+ W.forEach(function(w,i){
+  var d=0;w.tasks.forEach(function(_,j){if(S[i+"-"+j])d++});
+  tot+=w.tasks.length;dn+=d;
+  var el=document.createElement("details");
+  if(!openSet&&d<w.tasks.length){el.open=true;openSet=true}
+  var sum=document.createElement("summary");if(d===w.tasks.length)sum.className="done";
+  sum.innerHTML='<span class="tag">'+w.t+'</span>'+(w.rel?'<span class="rel">'+w.rel+'</span>':'')+'<span class="name">'+w.n+'</span><span class="cnt">'+d+'/'+w.tasks.length+'</span>';
+  el.appendChild(sum);
+  if(w.warn){var p=document.createElement("div");p.className="warn";p.textContent=w.warn;el.appendChild(p)}
+  var ul=document.createElement("ul");
+  w.tasks.forEach(function(t,j){
+   var k=i+"-"+j,li=document.createElement("li");if(S[k])li.className="on";
+   var lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=!!S[k];
+   cb.onchange=function(){if(cb.checked)S[k]=1;else delete S[k];save();var o=[];document.querySelectorAll("details").forEach(function(x,n){if(x.open)o.push(n)});render();document.querySelectorAll("details").forEach(function(x,n){x.open=o.indexOf(n)>-1})};
+   var sp=document.createElement("span");sp.textContent=t;
+   lb.appendChild(cb);lb.appendChild(sp);li.appendChild(lb);ul.appendChild(li)});
+  el.appendChild(ul);root.appendChild(el)});
+ var pc=Math.round(dn/tot*100);
+ document.getElementById("bar").style.width=pc+"%";
+ document.getElementById("pct").textContent=pc+"% complete";
+ document.getElementById("count").textContent=dn+" / "+tot+" tasks";
+}
+document.getElementById("reset").onclick=function(){if(confirm("Reset all progress?")){S={};save();render()}};
+save();render();
+</script>
+</body>
+</html>
