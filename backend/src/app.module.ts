@@ -8,7 +8,7 @@ import { ServersModule } from './servers/servers.module.js';
 import { ApplicationsModule } from './applications/applications.module.js';
 import { MonitoringModule } from './monitoring/monitoring.module.js';
 import { AlertsModule } from './alerts/alerts.module.js';
-
+import { SecurityModule } from './common/security/security.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -20,6 +20,7 @@ import { AlertsModule } from './alerts/alerts.module.js';
     ApplicationsModule,
     MonitoringModule,
     AlertsModule,
+    SecurityModule,
   ],
 })
 export class AppModule {}
